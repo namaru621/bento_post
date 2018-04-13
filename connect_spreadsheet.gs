@@ -25,15 +25,39 @@ function write_sheet(value, username) {
   var usersheet = getSheet(username);
   value.split('').forEach(function(v, i, a){
     var setrange = 'B' + Math.floor((today_Day(today) + next_monday() + i));
-    console.log(next_monday());
-    console.log(username);
     usersheet.getRange(setrange).setValue(v);
   });
 }
 
 //指定したシートから注文状況を読み込む
+function reading_order(username){
+  var today = new Date();
+  var usersheet = getSheet(username);
+  var startday = Math.floor((today_Day(today) + next_monday()));
+  var setrange = 'B' + startday + ':' + 'B' + (startday + 5);
+  var _ = Underscore.load();
+  var ret_message = '';
+  for each(var val in _.zip.apply(_, usersheet.getSheetValues(startday, 2, 5, 1))){
+    ret_message = ret_message + val;
+  };
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, ret_message, 'order');
+}
 
 //指定したシートから支払い金額を読み込む
+function reading_payment(username){
+  var today = new Date();
+  var usersheet = getSheet(username);
+  var startday = Math.floor((today_Day(today) + next_monday()));
+  var setrange = 'B' + startday + ':' + 'B' + (startday + 5);
+  var _ = Underscore.load();
+  console.log(_.zip.apply(_, usersheet.getSheetValues(startday, 2, 5, 1)));
+}
+
+function test_sheets(){
+  var username = 'namaru621';
+  reading_payment(username);
+  reading_order(username);
+}
 
 //Slackからメンバー全員の名前を取り出し，シートを作成
 function create_sheet() {
@@ -48,7 +72,7 @@ function create_sheet() {
   }  
 }
 
-//7 + 1 - 曜日(日0~6土)，つまりはつぎの月曜日の日付を取得
+//今日から次の月曜日までの日数を取得
 function next_monday() {
   var today = new Date();
   if (today.getDay == 0) {
@@ -69,7 +93,7 @@ function getSheet(sname){
     //対象のシートが存在している時はそれを使う
     return sheet;
   }else{
-    //対象のシートが存在していない時はシートを作成しカラム名を設定する
+    //対象のシートが存在していない時はシートを作成する
     var s = spreadsheet.insertSheet(sname);
     return s;
   }
