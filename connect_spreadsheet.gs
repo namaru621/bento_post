@@ -24,8 +24,11 @@ function write_sheet(value, username) {
   var today = new Date();
   var usersheet = getSheet(username);
   value.split('').forEach(function(v, i, a){
-    var setrange = 'B' + Math.floor((today_Day(today) + next_monday() + i));
-    usersheet.getRange(setrange).setValue(v);
+    var order_range = 'B' + (today_Day(today) + next_monday() + i);
+    usersheet.getRange(order_range).setValue(v);
+    var state_range = 'C' + (today_Day(today) + next_monday() + i);
+    usersheet.getRange(state_range).setValue('a');
+    var payment_range = 'D' + (today_Day(today) + next_monday() + i);
   });
 }
 
@@ -33,7 +36,7 @@ function write_sheet(value, username) {
 function reading_order(username){
   var today = new Date();
   var usersheet = getSheet(username);
-  var startday = Math.floor((today_Day(today) + next_monday()));
+  var startday = today_Day(today) + next_monday();
   var setrange = 'B' + startday + ':' + 'B' + (startday + 5);
   var _ = Underscore.load();
   var ret_message = '';
@@ -47,10 +50,10 @@ function reading_order(username){
 function reading_payment(username){
   var today = new Date();
   var usersheet = getSheet(username);
-  var startday = Math.floor((today_Day(today) + next_monday()));
-  var setrange = 'B' + startday + ':' + 'B' + (startday + 5);
-  var _ = Underscore.load();
-  console.log(_.zip.apply(_, usersheet.getSheetValues(startday, 2, 5, 1)));
+
+  //前の金曜日までの金額を求める
+  var lastFriday = today_Day(today) + next_monday() - 10;
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, usersheet.getSheetValues(lastFriday, 4, 1, 1), 'order');
 }
 
 function test_sheets(){
@@ -102,5 +105,5 @@ function getSheet(sname){
 //年明け~今日の日数を取得
 function today_Day(today) {
   var newyearsday = new Date(today.getFullYear(), 0, 0);
-  return (today.getTime() - newyearsday.getTime()) / 1000 / 3600 / 24;
+  return Math.floor((today.getTime() - newyearsday.getTime()) / 1000 / 3600 / 24);
 }
