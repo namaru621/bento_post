@@ -15,10 +15,10 @@ function doPost(e) {
       break;
     //help message(usage)
     case /^help/.test(reception):
-      post_slack(SLACK_ACCESS_TOKEN, send_user, USAGE, 'usage');
+      post_slack(SLACK_ACCESS_TOKEN, '@' + send_user, USAGE, 'usage');
       break;
     default:
-      post_slack(SLACK_ACCESS_TOKEN, send_user, ERROR, 'usage');
+      post_slack(SLACK_ACCESS_TOKEN, '@' + send_user, ERROR, 'usage');
       break;
   }
 }
@@ -27,6 +27,7 @@ function order(reception, username) {
   var com = reception.split(" ")[0]
   var value = reception.split(" ")[1]
   write_sheet(value, username);
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, 'ordering_complete.', 'ordering_bot');
 }
 
 function order_test(){

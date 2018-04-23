@@ -29,6 +29,7 @@ function write_sheet(value, username) {
     var state_range = 'C' + (today_Day(today) + next_monday() + i);
     usersheet.getRange(state_range).setValue('a');
     var payment_range = 'D' + (today_Day(today) + next_monday() + i);
+    usersheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');
   });
 }
 
@@ -37,13 +38,13 @@ function reading_order(username){
   var today = new Date();
   var usersheet = getSheet(username);
   var startday = today_Day(today) + next_monday();
-  var setrange = 'B' + startday + ':' + 'B' + (startday + 5);
   var _ = Underscore.load();
   var ret_message = '';
-  for each(var val in _.zip.apply(_, usersheet.getSheetValues(startday, 2, 5, 1))){
-    ret_message = ret_message + val;
+//  for each(var val in _.zip.apply(_, usersheet.getSheetValues(startday, 1, 5, 2))){
+  for each(var val in usersheet.getSheetValues(startday, 1, 6, 2)){
+    ret_message = ret_message + (val[0] + '').split(' ').slice(0, 3) + '\t' + val[1] + '\n';
   };
-  post_slack(SLACK_ACCESS_TOKEN, '@' + username, ret_message, 'order');
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, ret_message, 'Next week order');
 }
 
 //指定したシートから支払い金額を読み込む
@@ -53,7 +54,7 @@ function reading_payment(username){
 
   //前の金曜日までの金額を求める
   var lastFriday = today_Day(today) + next_monday() - 10;
-  post_slack(SLACK_ACCESS_TOKEN, '@' + username, usersheet.getSheetValues(lastFriday, 4, 1, 1), 'order');
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, usersheet.getSheetValues(lastFriday, 4, 1, 1)[0][0], 'order');
 }
 
 function test_sheets(){
