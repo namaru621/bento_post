@@ -8,4 +8,4 @@ GASによって書かれています．
 
 ## 使い方
 
-
+`order [option] [value]`
