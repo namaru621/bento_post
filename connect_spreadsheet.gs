@@ -33,6 +33,33 @@ function write_sheet(value, username) {
   });
 }
 
+function write_sheet_ano(setday, value, username){
+  var setdate = new Date(2018, setday.slice(0, 2) - 1, setday.slice(2, 4));
+  var usersheet = getSheet(username);
+  console.log(setdate);
+  var order_range = 'B' + (today_Day(setdate));
+  usersheet.getRange(order_range).setValue(value);
+  var state_range = 'C' + (today_Day(setdate));
+  usersheet.getRange(state_range).setValue('a');
+  var payment_range = 'D' + (today_Day(setdate));
+  usersheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');  
+}
+
+function write_sheet_auto(username) {
+  var usersheet = getSheet(username);
+  var autoflag = usersheet.getSheetValues(7,7,1,1)[0]
+  var er = 'error';
+  if (autoflag == 't') {
+    usersheet.getRange('G7').setValue('f');
+    er = 'false';
+  }
+  else {
+    usersheet.getRange('G7').setValue('t');
+    er = 'true';
+  }
+  return er;
+}
+
 //指定したシートから注文状況を読み込む
 function reading_order(username){
   var today = new Date();
@@ -44,7 +71,7 @@ function reading_order(username){
   for each(var val in usersheet.getSheetValues(startday, 1, 6, 2)){
     ret_message = ret_message + (val[0] + '').split(' ').slice(0, 3) + '\t' + val[1] + '\n';
   };
-  post_slack(SLACK_ACCESS_TOKEN, '@' + username, ret_message, 'Next week order');
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, ret_message, 'ordering_bot');
 }
 
 //指定したシートから支払い金額を読み込む
@@ -79,7 +106,7 @@ function create_sheet() {
 //今日から次の月曜日までの日数を取得
 function next_monday() {
   var today = new Date();
-  if (today.getDay == 0) {
+  if (today.getDay() == '0') {
     return 1;
   }else{
     return 8 - today.getDay();
