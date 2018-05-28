@@ -2,23 +2,6 @@ var spreadsheet = SpreadsheetApp.openById(SPREADSHEET_TOKEN);
 //var sheet = spreadsheet.getSheetByName('bento_sheet_1804');
 //var data = sheet.getDataRange().getValues();
 
-function myFunction() {  
-  var today = new Date();  
-  var setrange = 'F' + (today.getDate() + 1);
-  
-  //sheet.getRange(setrange).setValue(today.getDate());
-  sheet.getRange(setrange).setValue('=SUM(A10:A13)');
-  console.log(sheet.getSheetValues(10, 6, 1, 1)[0][0]);
-  
-  console.log(today);
-  
-  var listres = UrlFetchApp.fetch(USER_LIST);
-  var listjson = JSON.parse(listres.getContentText());
-  for each(var val in listjson['members']) {
-    console.log(val['profile']);
-  }
-}
-
 //指定したシートに書き込む
 function write_sheet(value, username) {  
   var today = new Date();
@@ -34,7 +17,8 @@ function write_sheet(value, username) {
 }
 
 function write_sheet_ano(setday, value, username){
-  var setdate = new Date(2018, setday.slice(0, 2) - 1, setday.slice(2, 4));
+  var today = new Date();
+  var setdate = new Date(today.getFullYear(), setday.slice(0, 2) - 1, setday.slice(2, 4));
   var usersheet = getSheet(username);
   console.log(setdate);
   var order_range = 'B' + (today_Day(setdate));
@@ -45,7 +29,7 @@ function write_sheet_ano(setday, value, username){
   usersheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');  
 }
 
-function write_sheet_auto(username) {
+function write_sheet_auto(value, username) {
   var usersheet = getSheet(username);
   var autoflag = usersheet.getSheetValues(7,7,1,1)[0]
   var er = 'error';
@@ -55,6 +39,7 @@ function write_sheet_auto(username) {
   }
   else {
     usersheet.getRange('G7').setValue('t');
+    usersheet.getRange('G8').setValue(value);
     er = 'true';
   }
   return er;
@@ -67,11 +52,19 @@ function reading_order(username){
   var startday = today_Day(today) + next_monday();
   var _ = Underscore.load();
   var ret_message = '';
+  var er = 'error';
+  var autoflag = usersheet.getSheetValues(7,7,1,1)[0]
 //  for each(var val in _.zip.apply(_, usersheet.getSheetValues(startday, 1, 5, 2))){
   for each(var val in usersheet.getSheetValues(startday, 1, 6, 2)){
     ret_message = ret_message + (val[0] + '').split(' ').slice(0, 3) + '\t' + val[1] + '\n';
   };
-  post_slack(SLACK_ACCESS_TOKEN, '@' + username, ret_message, 'ordering_bot');
+  if (autoflag == 't') {
+    er = 'true';
+  }
+  else {
+    er = 'false';
+  }
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, ret_message + 'auto_order flag is ' + er + '.', 'ordering_bot');
 }
 
 //指定したシートから支払い金額を読み込む
@@ -84,10 +77,34 @@ function reading_payment(username){
   post_slack(SLACK_ACCESS_TOKEN, '@' + username, usersheet.getSheetValues(lastFriday, 4, 1, 1)[0][0], 'order');
 }
 
-function test_sheets(){
-  var username = 'namaru621';
-  reading_payment(username);
-  reading_order(username);
+//毎週金曜12時に実行
+//次週のオートセット等を実行する
+function weekly_set() {
+  var today = new Date();
+  var sheets = spreadsheet.getSheets();
+  var usrcal = CalendarApp.getCalendarById(CALENDAR); //特定のIDのカレンダーを取得
+  var _ = Underscore.load();
+  for each(var sheet in sheets) {
+    var autoflag = _.zip.apply(_, sheet.getSheetValues(7, 7, 2, 1))[0][0];
+    var value = _.zip.apply(_, sheet.getSheetValues(7, 7, 2, 1))[0][1];
+    for (var i=0; i<6; i++) {
+      if (autoflag[0] == 't') {
+        var day = today.getDate() + next_monday + i;
+        var setdate = new Date(Math.floor(today.getFullYear()), today.getMonth(), today.getDate() + next_monday() + i);
+        for each(var eve in usrcal.getEventsForDay(setdate)) {
+          if (eve.getTitle() == '昼食会') {
+            var order_range = 'B' + (today_Day(setdate));
+            sheet.getRange(order_range).setValue(value);
+            var state_range = 'C' + (today_Day(setdate));
+            sheet.getRange(state_range).setValue('a');
+            var payment_range = 'D' + (today_Day(setdate));
+            sheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');  
+          }
+        }  
+      }
+      var order_range = 'B' + (today_Day(today) + next_monday() + i);
+    }  
+  }
 }
 
 //Slackからメンバー全員の名前を取り出し，シートを作成

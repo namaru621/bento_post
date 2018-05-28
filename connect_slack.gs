@@ -14,10 +14,10 @@ function doPost(e) {
     case /^order\s-d\s\d{4}\s[ifn]{1}/.test(reception):
       spot_order(reception, send_user);
       break;
-    case /^order\s-w\s[ifn]{6}/.test(reception):
+    case /^order\s-w\s[ifn]+/.test(reception):
       weekly_order(reception, send_user);
       break;
-    case /^order\s-a/.test(reception):
+    case /^order\s-a\s[ifn]{1}/.test(reception):
       auto_order(reception, send_user);
       break;
     //help message(usage)
@@ -47,17 +47,11 @@ function spot_order(reception, username) {
   write_sheet_ano(setday, value, username);
 }
 
-function auto_order(username) {
-  var ret = write_sheet_auto(username);
+function auto_order(reception, username) {
+  var value = reception.split(" ")[2];
+  var ret = write_sheet_auto(value, username);
   post_slack(SLACK_ACCESS_TOKEN, '@' + username, 'auto_order flag is ' + ret + '.', 'ordering_bot');
 }
-
-function order_test(){
-  weekly_order("order -w iiffii", "namaru621");
-  //spot_order("order -d 0621 n", "namaru621");
-  //auto_order("namaru621");
-}
-
 
 function post_slack (access_token, channel, message, botname) {
   var slackApp = SlackApp.create(access_token); 
