@@ -43,14 +43,15 @@ function weekly_order(reception, username) {
 function spot_order(reception, username) {
   var value = reception.split(" ")[3];
   var setday = reception.split(" ")[2];
-  post_slack(SLACK_ACCESS_TOKEN, '@' + username, 'ordering_complete.', 'ordering_bot');
   write_sheet_ano(setday, value, username);
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, 'ordering_complete.', 'ordering_bot');
 }
 
 function auto_order(reception, username) {
   var value = reception.split(" ")[2];
   var ret = write_sheet_auto(value, username);
   post_slack(SLACK_ACCESS_TOKEN, '@' + username, 'auto_order flag is ' + ret + '.', 'ordering_bot');
+    reading_order(username);
 }
 
 function post_slack (access_token, channel, message, botname) {

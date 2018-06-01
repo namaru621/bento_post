@@ -15,8 +15,8 @@ function test_sheets(){
 function order_test(){
   //weekly_order("order -w i", "namaru621");
   //spot_order("order -d 0621 n", "namaru621");
-  //auto_order("order -a i", "namaru621");
-  auto_order("check");
+  auto_order("order -a i", "namaru621");
+  //auto_order("check");
 }
 
 function myFunction() {  

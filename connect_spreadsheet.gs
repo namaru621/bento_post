@@ -30,14 +30,34 @@ function write_sheet_ano(setday, value, username){
 }
 
 function write_sheet_auto(value, username) {
+  var today = new Date();
   var usersheet = getSheet(username);
   var autoflag = usersheet.getSheetValues(7,7,1,1)[0]
+  var usrcal = CalendarApp.getCalendarById(CALENDAR); //特定のIDのカレンダーを取得
   var er = 'error';
+  var _ = Underscore.load();
   if (autoflag == 't') {
     usersheet.getRange('G7').setValue('f');
     er = 'false';
   }
   else {
+    var autoflag = _.zip.apply(_, usersheet.getSheetValues(7, 7, 2, 1))[0][0];
+    var value = _.zip.apply(_, usersheet.getSheetValues(7, 7, 2, 1))[0][1];
+    for (var i=0; i<6; i++) {
+        var day = today.getDate() + next_monday + i;
+        var setdate = new Date(Math.floor(today.getFullYear()), today.getMonth(), today.getDate() + next_monday() + i);
+        //for each(var eve in usrcal.getEventsForDay(setdate)) {
+          //if (eve.getTitle() == '昼食会') {
+            var order_range = 'B' + (today_Day(setdate));
+            usersheet.getRange(order_range).setValue(value);
+            var state_range = 'C' + (today_Day(setdate));
+            usersheet.getRange(state_range).setValue('a');
+            var payment_range = 'D' + (today_Day(setdate));
+            usersheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');
+          break;
+          //}
+      //}
+    }
     usersheet.getRange('G7').setValue('t');
     usersheet.getRange('G8').setValue(value);
     er = 'true';
@@ -91,16 +111,23 @@ function weekly_set() {
       if (autoflag[0] == 't') {
         var day = today.getDate() + next_monday + i;
         var setdate = new Date(Math.floor(today.getFullYear()), today.getMonth(), today.getDate() + next_monday() + i);
-        for each(var eve in usrcal.getEventsForDay(setdate)) {
-          if (eve.getTitle() == '昼食会') {
+        //for each(var eve in usrcal.getEventsForDay(setdate)) {
+          //if (eve.getTitle().indexOf('昼食会') != -1) {
             var order_range = 'B' + (today_Day(setdate));
             sheet.getRange(order_range).setValue(value);
             var state_range = 'C' + (today_Day(setdate));
             sheet.getRange(state_range).setValue('a');
             var payment_range = 'D' + (today_Day(setdate));
             sheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');  
-          }
-        }  
+            break;
+          //}
+        //}  
+      }
+      else {
+        var day = today.getDate() + next_monday + i;
+        var setdate = new Date(Math.floor(today.getFullYear()), today.getMonth(), today.getDate() + next_monday() + i);    
+        var payment_range = 'D' + (today_Day(setdate));
+        sheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');  
       }
       var order_range = 'B' + (today_Day(today) + next_monday() + i);
     }  
