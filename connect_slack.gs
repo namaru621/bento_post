@@ -20,6 +20,9 @@ function doPost(e) {
     case /^order\s-a\s[ifn]{1}/.test(reception):
       auto_order(reception, send_user);
       break;
+    case /^order\s-p/.test(reception):
+      reading_payment(send_user);
+      break;
     //help message(usage)
     case /^help/.test(reception):
       post_slack(SLACK_ACCESS_TOKEN, '@' + send_user, USAGE, 'usage');
@@ -50,8 +53,8 @@ function spot_order(reception, username) {
 function auto_order(reception, username) {
   var value = reception.split(" ")[2];
   var ret = write_sheet_auto(value, username);
-  post_slack(SLACK_ACCESS_TOKEN, '@' + username, 'auto_order flag is ' + ret + '.', 'ordering_bot');
-    reading_order(username);
+  //post_slack(SLACK_ACCESS_TOKEN, '@' + username, 'auto_order flag is ' + ret + '.', 'ordering_bot');
+  reading_order(username);
 }
 
 function post_slack (access_token, channel, message, botname) {

@@ -30,6 +30,7 @@ function write_sheet_ano(setday, value, username){
 }
 
 function write_sheet_auto(value, username) {
+  console.log(value);
   var today = new Date();
   var usersheet = getSheet(username);
   var autoflag = usersheet.getSheetValues(7,7,1,1)[0]
@@ -42,7 +43,6 @@ function write_sheet_auto(value, username) {
   }
   else {
     var autoflag = _.zip.apply(_, usersheet.getSheetValues(7, 7, 2, 1))[0][0];
-    var value = _.zip.apply(_, usersheet.getSheetValues(7, 7, 2, 1))[0][1];
     for (var i=0; i<6; i++) {
         var day = today.getDate() + next_monday + i;
         var setdate = new Date(Math.floor(today.getFullYear()), today.getMonth(), today.getDate() + next_monday() + i);
@@ -61,6 +61,7 @@ function write_sheet_auto(value, username) {
     usersheet.getRange('G7').setValue('t');
     usersheet.getRange('G8').setValue(value);
     er = 'true';
+    console.log(value, er);
   }
   return er;
 }
@@ -94,7 +95,7 @@ function reading_payment(username){
 
   //前の金曜日までの金額を求める
   var lastFriday = today_Day(today) + next_monday() - 10;
-  post_slack(SLACK_ACCESS_TOKEN, '@' + username, usersheet.getSheetValues(lastFriday, 4, 1, 1)[0][0], 'order');
+  post_slack(SLACK_ACCESS_TOKEN, '@' + username, 'お代金は ' + usersheet.getSheetValues(lastFriday, 4, 1, 1)[0][0] + ' 円です．', 'order');
 }
 
 //毎週金曜12時に実行
@@ -104,12 +105,15 @@ function weekly_set() {
   var sheets = spreadsheet.getSheets();
   var usrcal = CalendarApp.getCalendarById(CALENDAR); //特定のIDのカレンダーを取得
   var _ = Underscore.load();
+  var orderlist = "";
   for each(var sheet in sheets) {
-    var autoflag = _.zip.apply(_, sheet.getSheetValues(7, 7, 2, 1))[0][0];
-    var value = _.zip.apply(_, sheet.getSheetValues(7, 7, 2, 1))[0][1];
-    for (var i=0; i<6; i++) {
+    var getlist = _.zip.apply(_, sheet.getSheetValues(7, 7, 3, 1));
+    var autoflag = getlist[0][0];
+    var value = getlist[0][1];
+    var username = getlist[0][2];
+    //for (var i=0; i<6; i++) {
+    for (var i=0; i<1; i++) {
       if (autoflag[0] == 't') {
-        var day = today.getDate() + next_monday + i;
         var setdate = new Date(Math.floor(today.getFullYear()), today.getMonth(), today.getDate() + next_monday() + i);
         //for each(var eve in usrcal.getEventsForDay(setdate)) {
           //if (eve.getTitle().indexOf('昼食会') != -1) {
@@ -119,31 +123,38 @@ function weekly_set() {
             sheet.getRange(state_range).setValue('a');
             var payment_range = 'D' + (today_Day(setdate));
             sheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');  
-            break;
           //}
-        //}  
+        //}
+      //注文状況まとめ
       }
-      else {
-        var day = today.getDate() + next_monday + i;
-        var setdate = new Date(Math.floor(today.getFullYear()), today.getMonth(), today.getDate() + next_monday() + i);    
-        var payment_range = 'D' + (today_Day(setdate));
-        sheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i")*370+COUNTIFS(B1:' + order_range + ', "f")*420+COUNTIFS(B1:' + order_range + ', "c")*420');  
+      else {;}
+      var order = sheet.getRange('B' + (today_Day(today) + next_monday() + i)).getValue();
+      console.log(order, orderlist, username);
+      if (order == 'i' || order == 'f') {
+        orderlist = orderlist + '\n' + sheet.getRange('G9').getValue();
       }
-      var order_range = 'B' + (today_Day(today) + next_monday() + i);
-    }  
+    }
   }
+  post_slack(SLACK_ACCESS_TOKEN, '#ordering_lunch', '来週月曜の注文状況...' + orderlist, 'ordering_bot');
 }
 
 //Slackからメンバー全員の名前を取り出し，シートを作成
-function create_sheet() {
+function format_sheet() {
   var today = new Date();
-  var newyearday = new Date(today.getFullYear(), 0, 1);
+  var newyearday = new Date(today.getFullYear(), 0);
   var listres = UrlFetchApp.fetch(USER_LIST);
   var listjson = JSON.parse(listres.getContentText());
   for each(var val in listjson['members']) {
     var usersheet = getSheet(val['name']);
+    usersheet.getRange('G9').setValue(val['real_name']);
     var sourceRange = usersheet.getRange('A1').setValue(newyearday);
     sourceRange.autoFill(usersheet.getRange('A1:A366'), SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
+    for (var i = 0; i < 366; i++){
+      var order_range = 'B' + (today_Day(newyearday) + i);
+      var state_range = 'C' + (today_Day(newyearday) + i);
+      var payment_range = 'D' + (today_Day(newyearday) + i);
+      usersheet.getRange(payment_range).setValue('=COUNTIFS(B1:' + order_range + ', "i", C1:' + state_range + ', "a")*370+COUNTIFS(B1:' + order_range + ', "f", C1:' + state_range + ', "a")*420+COUNTIFS(B1:' + order_range + ', "c", C1:' + state_range + ', "a")*420');
+    }
   }  
 }
 
@@ -178,4 +189,19 @@ function getSheet(sname){
 function today_Day(today) {
   var newyearsday = new Date(today.getFullYear(), 0, 0);
   return Math.floor((today.getTime() - newyearsday.getTime()) / 1000 / 3600 / 24);
+}
+
+function ConvertToNumber(strCol) {  
+  var iNum = 0;
+  var temp = 0;
+   
+  strCol = strCol.toUpperCase();
+  for (i = strCol.length - 1; i >= 0; i--) {
+    temp = strCol.charCodeAt(i) - 65; // 現在の文字番号;
+    if(i != strCol.length - 1) {
+      temp = (temp + 1) * Math.pow(26,(i + 1));
+    }
+    iNum = iNum + temp
+  }
+  return iNum;
 }

@@ -16,7 +16,7 @@ function order_test(){
   //weekly_order("order -w i", "namaru621");
   //spot_order("order -d 0621 n", "namaru621");
   auto_order("order -a i", "namaru621");
-  //auto_order("check");
+  //reading_payment("namaru621")
 }
 
 function myFunction() {  
@@ -39,4 +39,12 @@ function myFunction() {
 function today_Day_test() {
   var today = new Date();
   today_Day(today);
+}
+
+function userlist() {
+  var listres = UrlFetchApp.fetch(USER_LIST);
+  var listjson = JSON.parse(listres.getContentText());
+  for each(var val in listjson['members']) {
+    console.log(val['real_name']);
+  }
 }
