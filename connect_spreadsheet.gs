@@ -135,7 +135,7 @@ function weekly_set() {
       }
     }
   }
-  post_slack(SLACK_ACCESS_TOKEN, '#ordering_lunch', '来週月曜の注文状況...' + orderlist, 'ordering_bot');
+  post_slack(SLACK_ACCESS_TOKEN, '#ordering_lunch', '来週昼食会の注文状況...' + orderlist, 'ordering_bot');
 }
 
 //Slackからメンバー全員の名前を取り出し，シートを作成
